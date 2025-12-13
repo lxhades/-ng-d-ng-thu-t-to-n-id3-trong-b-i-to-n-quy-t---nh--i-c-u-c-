@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dự đoán câu cá (ID3)</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f0f4ff;
+            background-image: url("bg-web2.jpg");
+            background-size: cover;
+        }
+
+        .container {
+            width: 350px;
+            background: white;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            border-radius: 12px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #aaa;
+            border-radius: 8px;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #aaa;
+            border-radius: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="display: flex; justify-content: center;">
+    <div class="container">
+        <h2>Dự đoán câu cá (ID3)</h2>
+        <label>Nhiệt độ (°C)</label>
+        <input type="number" id="temp">
+
+        <label>Độ ẩm (%)</label>
+        <input type="number" id="humidity">
+
+        <label>Tốc độ gió (km/h)</label>
+        <input type="number" id="wind">
+
+        <label>Độ trong nước</label>
+        <select id="water">
+            <option value="Trong">Trong</option>
+            <option value="Hơi đục">Hơi đục</option>
+            <option value="Quá đục">Quá đục</option>
+        </select>
+
+        <label>Thời điểm</label>
+        <select id="time">
+            <option value="Sáng sớm">Sáng sớm</option>
+            <option value="Chiều muộn">Chiều muộn</option>
+            <option value="Tối">Tối</option>
+            <option value="Khác">Khác</option>
+        </select>
+
+        <label>Tình trạng trời</label>
+        <select id="outlook">
+            <option value="Mát mẻ">Mát mẻ</option>
+            <option value="Âm u">Âm u</option>
+            <option value="Mưa nhẹ">Mưa nhẹ</option>
+            <option value="Mưa lớn">Mưa lớn</option>
+            <option value="Nắng gắt">Nắng gắt</option>
+        </select>
+
+        <button onclick="randomInput()">Random</button>
+
+        <button onclick="predictWeather()">Dự đoán</button>
+
+        <div class="result" id="result"></div>
+    </div>
+    </div>
+
+
+    <script>
+
+        function randomInput() {
+            document.getElementById("temp").value = Math.floor(Math.random() * 25) + 10;  // 10 - 35°C
+            document.getElementById("humidity").value = Math.floor(Math.random() * 71) + 20; // 20 - 90%
+            document.getElementById("wind").value = Math.floor(Math.random() * 30); // 0 - 30 km/h
+
+            let selects = ["water", "time", "outlook"];
+            selects.forEach(id => {
+                let s = document.getElementById(id);
+                s.selectedIndex = Math.floor(Math.random() * s.options.length);
+            });
+        }
+
+        function convertTemperature(t) {
+            if (t < 20) return "Lạnh";
+            if (t <= 28) return "Vừa";
+            return "Nóng";
+        }
+
+        function convertHumidity(h) {
+            if (h < 40) return "Thấp";
+            if (h <= 70) return "Vừa";
+            return "Cao";
+        }
+
+        function convertWind(w) {
+            if (w < 10) return "Không gió";
+            if (w < 20) return "Gió nhẹ";
+            return "Gió mạnh";
+        }
+
+        function predict(Temperature, Humidity, Wind, WaterClarity, Time, Outlook) {
+
+    // Rule 8
+    if (WaterClarity === "Quá đục") return "Không";
+
+    if (WaterClarity === "Hơi đục") {
+
+        // Rule 11
+        if (Wind === "Gió mạnh") return "Không";
+
+        // Rule 9
+        if (Wind === "Gió nhẹ") {
+            if (Outlook === "Mưa lớn") return "Không";
+            return "Có";
+        }
+
+        // Rule 10
+        if (Wind === "Không gió") {
+            if (Temperature === "Nóng" && Humidity === "Cao") return "Không";
+            return "Có";
+        }
+    }
+
+    if (WaterClarity === "Trong") {
+
+        // Rule 1 (đã sửa: PHẢI có Humidity = Cao)
+        if (Outlook === "Âm u" && Humidity === "Cao" && Time === "Tối")
+            return "Không";
+
+        // Rule 2
+        if (Outlook === "Mát mẻ" && Humidity === "Cao")
+            return "Không";
+
+        // Rule 3 + 4
+        if (Outlook === "Mưa nhẹ") {
+            if (Time === "Khác") return "Không";
+            if (Time === "Tối" && Temperature === "Lạnh") return "Không";
+        }
+
+        // Rule 5
+        if (Outlook === "Mưa lớn")
+            return "Không";
+
+        // Rule 6 + 7
+        if (Outlook === "Nắng gắt") {
+            if (Humidity === "Thấp" && Time === "Tối") return "Không";
+            if (Humidity === "Cao" && Wind !== "Gió nhẹ") return "Không";
+        }
+    }
+
+    // Rule Default
+    return "Có";
+}
+
+        function predictWeather() {
+            const temp = convertTemperature(Number(document.getElementById("temp").value));
+            const hum = convertHumidity(Number(document.getElementById("humidity").value));
+            const wind = convertWind(Number(document.getElementById("wind").value));
+
+            const water = document.getElementById("water").value;
+            const time = document.getElementById("time").value;
+            const outlook = document.getElementById("outlook").value;
+
+            const result = predict(temp, hum, wind, water, time, outlook);
+
+            document.getElementById("result").innerHTML =
+                "Kết quả dự đoán: <b>" + result + "</b>";
+        }
+    </script>
+
+</body>
+
+</html>
